@@ -5,7 +5,7 @@ numpy-vox-io
 
 **This project is a WIP and I'm pausing development while I wait for the MagicaVoxel vox format to be a little less churny and be fully documented.**
 
-**Current status: the code for writing vox files appears to be working with latest MagicaVoxel, but the code for reading the latest vox files isn't.**
+**Current status: Updated for Magicavoxel 0.99.6.4 (Released September 5, 2021). Reading materials is still unsupported.**
 For more info see https://github.com/alexhunsley/numpy-vox-io/issues/4
 
 

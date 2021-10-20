@@ -18,21 +18,23 @@ class VoxWriter(object):
     def _matflags(self, props):
         flags = 0
         res = b''
-        for b,field in [ (0, 'plastic'),
+        for b, field in [(0, 'plastic'),
                          (1, 'roughness'),
                          (2, 'specular'),
                          (3, 'IOR'),
                          (4, 'attenuation'),
                          (5, 'power'),
                          (6, 'glow'),
-                         (7, 'isTotalPower') ]:
+                         (7, 'isTotalPower')]:
             if field in props:
-                flags |= 1<<b
-                res += pack('f', props[field])
+                flags |= 1 << b
+                try:
+                    res += pack('f', props[field])
+                except Exception as exc:
+                    print(f"Bad prop content: {props[field]} ({type(props[field])}) expected float.")
+                    raise exc
 
-        return pack('i', flags)+res
-
-
+        return pack('i', flags) + res
 
     def write(self):
 
@@ -51,7 +53,8 @@ class VoxWriter(object):
             chunks.append((b'RGBA', b''.join(pack('BBBB', *c) for c in self.vox.palette)))
 
         for m in self.vox.materials:
-            chunks.append((b'MATT', pack('iif', m.id, m.type, m.weight) + self._matflags(m.props)))
+            if m:
+                chunks.append((b'MATT', pack('iif', m.id, m.type, m.weight) + self._matflags(m.props)))
 
         # TODO materials
 
