@@ -38,6 +38,13 @@ class VoxWriter(object):
 
     def write(self):
 
+        res = self.to_bytes()
+
+        with open(self.filename, 'wb') as f:
+            f.write(res)
+
+    def to_bytes(self):
+
         res = pack('4si', b'VOX ', 150)
 
         chunks = []
@@ -60,5 +67,4 @@ class VoxWriter(object):
 
         res += self._chunk(b'MAIN', b'', chunks)
 
-        with open(self.filename, 'wb') as f:
-            f.write(res)
+        return res
