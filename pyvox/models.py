@@ -5,14 +5,40 @@ from typing import Any, Literal
 from .defaultpalette import default_palette
 from .utils import chunks
 
-Size = namedtuple('Size', 'x y z')
-Color = namedtuple('Color', 'r g b a')
-Voxel = namedtuple('Voxel', 'x y z c')
-Model = namedtuple('Model', 'size voxels')
+# Palette index is an integer in the inclusive range 1-255.
+PaletteIndex = int
+# Helper to indicate this allows values in tha 0-255 range.
+ByteInteger = int
+
+
+@dataclass
+class Size:
+    x: ByteInteger
+    y: ByteInteger
+    z: ByteInteger
+
+@dataclass
+class Color:
+    r: ByteInteger
+    g: ByteInteger
+    b: ByteInteger
+    a: ByteInteger
+
+@dataclass
+class Voxel:
+    x: ByteInteger
+    y: ByteInteger
+    z: ByteInteger
+    c: PaletteIndex
+
+@dataclass
+class Model:
+    size: Size
+    voxels: list[Voxel]
 
 @dataclass
 class Material:
-    id: int  # Index of the color palette
+    id: PaletteIndex
     type: Literal[b'_diffuse', b'_metal', b'_glass', b'_emit', b'_blend', b'_cloud']  # TODO: check _blend / _cloud exist.
     weight: float  # 0-1
     props: dict[str, Any]
@@ -23,7 +49,7 @@ def get_default_palette():
 
 class Vox(object):
 
-    def __init__(self, models, palette=None, materials: list[Material]=None):
+    def __init__(self, models: list[Model], palette: list[Color] = None, materials: list[Material] = None):
         self.models = models
         self.default_palette = not palette
         self._palette = palette or get_default_palette()

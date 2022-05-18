@@ -1,3 +1,4 @@
+import io
 from struct import unpack_from as unpack, calcsize
 import logging
 
@@ -39,29 +40,37 @@ class Chunk(object):
             # Docs say:  color [0-254] are mapped to palette index [1-255]
             # hmm
             # self.palette = [ Color(0,0,0,0) ] + [ Color(*unpack('BBBB', content, 4*i)) for i in range(255) ]
-        elif chunk_id == b'MATT' or chunk_id == b'MATL':
-            _id, _type, weight, flags = unpack('iifi', content)
+        elif chunk_id == b'MATL':
+            data = io.BytesIO(content)
+            _id = self.unpack('i', data)[0]
+            n_keys = self.unpack('i', data)[0]
+            
+            type = b'_diffuse'
+            weight = 0.0
             props = {}
-            offset = 16
-            for b, field in [(0, 'plastic'),
-                             (1, 'roughness'),
-                             (2, 'specular'),
-                             (3, 'IOR'),
-                             (4, 'attenuation'),
-                             (5, 'power'),
-                             (6, 'glow'),
-                             (7, 'isTotalPower')]:
-                if bit(flags, b) and b < 7:  # no value for 7 / isTotalPower
-                    props[field] = unpack('f', content, offset)[0]
-                    offset += 4
+            for i in range(n_keys):
+                key_len = self.unpack('i', data)[0]
+                key = b''.join(self.unpack('s', data)[0] for j in range(key_len))
+                value_len = self.unpack('i', data)[0]
+                value = b''.join(self.unpack('s', data)[0] for j in range(value_len))
+                if key == b'_weight':
+                    weight = float(value.decode('ascii'))
+                elif key == b'_type':
+                    type = value
+                else:
+                    props[key.decode('ascii')] = value.decode('ascii')
 
-            self.material = Material(_id, _type, weight, props)
+            self.material = Material(id=_id, type=type, weight=weight, props=props)
 
         else:
             # raise ParsingException('Unknown chunk type: %s'%self.id)
             log.debug(f"Unknown chunk type {chunk_id}")
             pass
 
+    def unpack(self, fmt, stream):
+        size = calcsize(fmt)
+        buf = stream.read(size)
+        return unpack(fmt, buf)
 
 class VoxParser(object):
 
@@ -121,8 +130,7 @@ class VoxParser(object):
         else:
             palette = None
 
-        materials = [c.material for c in chunks]
-
+        materials = [c.material for c in chunks if c.material]
         return Vox(models, palette, materials)
 
     def _parse_model(self, size, xyzi):
