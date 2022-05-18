@@ -1,11 +1,13 @@
 from struct import pack
 
+from pyvox.models import Vox
+
 
 class VoxWriter(object):
 
-    def __init__(self, filename, vox):
+    def __init__(self, filename, vox: Vox):
         self.filename = filename
-        self.vox = vox
+        self.vox: Vox = vox
 
     def _chunk(self, id, content, chunks=[]):
 
@@ -43,6 +45,17 @@ class VoxWriter(object):
         with open(self.filename, 'wb') as f:
             f.write(res)
 
+    def _pack_dict(self, data: dict):
+        ret = b''
+        # Pack dict: store the # of keys, then for each key/value strings.
+        ret += pack('i', len(data))
+        for key, value in data.items():
+            ret += pack('i', len(key))
+            ret += b''.join(pack('s', key[c:c+1]) for c in range(len(key)))
+            ret += pack('i', len(value))
+            ret += b''.join(pack('s', value[c:c+1]) for c in range(len(value)))
+        return ret
+
     def to_bytes(self):
 
         res = pack('4si', b'VOX ', 150)
@@ -57,11 +70,15 @@ class VoxWriter(object):
             chunks.append((b'XYZI', pack('i', len(m.voxels)) + b''.join(pack('BBBB', *v) for v in m.voxels)))
 
         if not self.vox.default_palette:
-            chunks.append((b'RGBA', b''.join(pack('BBBB', *c) for c in self.vox.palette)))
+            # The palette needs to contain 255 items of MagicaVoxel will overflow the read.
+            chunks.append((b'RGBA', b''.join(pack('BBBB', *c) for c in self.vox.palette) + b''.join(pack('BBBB', 0x00, 0x00, 0x00, 0xFF) for i in range(256 - len(self.vox.palette)))))
 
         for m in self.vox.materials:
-            if m:
-                chunks.append((b'MATT', pack('iif', m.id, m.type, m.weight) + self._matflags(m.props)))
+            chunks.append((b'MATL', pack('i', m.id) + self._pack_dict({
+                b'_type': m.type,
+                b'_weight': str(m.weight).encode('ascii'),
+                **{ (b'_' + key.encode('ascii')): str(value).encode('ascii') for key, value in m.props.items() },
+            })))
 
         # TODO materials
 

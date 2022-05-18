@@ -9,6 +9,10 @@ numpy-vox-io
 
 This fork is intended to support features required for the briqNFT builder frontend.
 
+Changelist:
+- Python support changed to 3.8+ for typing hints.
+- Added support for Writing MATL chunks, fixed an issue related to palette overflow.
+
 **Current status: Updated for Magicavoxel 0.99.6.4 (Released September 5, 2021). Reading materials is still unsupported.**
 For more info see https://github.com/alexhunsley/numpy-vox-io/issues/4
 

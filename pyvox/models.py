@@ -1,4 +1,6 @@
 from collections import namedtuple
+from dataclasses import dataclass
+from typing import Any, Literal
 
 from .defaultpalette import default_palette
 from .utils import chunks
@@ -7,8 +9,13 @@ Size = namedtuple('Size', 'x y z')
 Color = namedtuple('Color', 'r g b a')
 Voxel = namedtuple('Voxel', 'x y z c')
 Model = namedtuple('Model', 'size voxels')
-Material = namedtuple('Material', 'id type weight props')
 
+@dataclass
+class Material:
+    id: int  # Index of the color palette
+    type: Literal[b'_diffuse', b'_metal', b'_glass', b'_emit', b'_blend', b'_cloud']  # TODO: check _blend / _cloud exist.
+    weight: float  # 0-1
+    props: dict[str, Any]
 
 def get_default_palette():
     return [Color(*tuple(i.to_bytes(4, 'little'))) for i in default_palette]
@@ -16,11 +23,11 @@ def get_default_palette():
 
 class Vox(object):
 
-    def __init__(self, models, palette=None, materials=None):
+    def __init__(self, models, palette=None, materials: list[Material]=None):
         self.models = models
         self.default_palette = not palette
         self._palette = palette or get_default_palette()
-        self.materials = materials or []
+        self.materials: list[Material] = materials or []
 
     @property
     def palette(self):
